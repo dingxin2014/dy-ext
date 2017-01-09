@@ -22,9 +22,6 @@ public class ClusterConfiguration {
 
     private static volatile ClusterConfiguration clusterConfiguration;
 
-    @Autowired
-    private ClusterRegistrar clusterRegistrar;
-
     private Properties clusterProperties;
     private String env;
     private String appCode;

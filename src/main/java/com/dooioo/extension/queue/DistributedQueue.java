@@ -52,8 +52,9 @@ public class DistributedQueue<E> implements Queue<E>, Serializable {
 
     static{
         logger.info("检查[zookeeper queue]根目录！");
+        ZooKeeper zk = null;
         try {
-            ZooKeeper zk = new ZooKeeper(zookeeperConfig, 3000, new Watcher() {
+            zk = new ZooKeeper(zookeeperConfig, 3000, new Watcher() {
                 @Override
                 public void process(WatchedEvent event) {
                     logger.info("连接zookeeper服务器！");
@@ -69,7 +70,6 @@ public class DistributedQueue<E> implements Queue<E>, Serializable {
                 logger.info("初始化["+appCode+"]分布式锁目录");
                 zk.create(root+"/"+appCode, ("["+appCode+"]分布式锁目录").getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
             }
-            zk.close();
             logger.info("检查[zookeeper queue]根目录完毕！");
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
@@ -77,6 +77,13 @@ public class DistributedQueue<E> implements Queue<E>, Serializable {
             logger.error(e.getMessage(), e);
         } catch (KeeperException e) {
             logger.error(e.getMessage(), e);
+        } finally {
+            if(zk != null) {
+                try {
+                    zk.close();
+                } catch (InterruptedException e) {
+                }
+            }
         }
     }
 
@@ -409,6 +416,7 @@ public class DistributedQueue<E> implements Queue<E>, Serializable {
         if(CollectionUtils.isEmpty(list))
             return null;
         try {
+            Collections.sort(list);
             if((e = getData(list.get(0))) == null)
                 return poll();
             zk.delete(path + "/" + list.get(0), -1);
@@ -425,6 +433,7 @@ public class DistributedQueue<E> implements Queue<E>, Serializable {
         if(CollectionUtils.isEmpty(list))
             throw new IllegalStateException();
         try {
+            Collections.sort(list);
             if((e = getData(list.get(0))) == null)
                 return element();
             return e;
@@ -440,11 +449,12 @@ public class DistributedQueue<E> implements Queue<E>, Serializable {
         if(CollectionUtils.isEmpty(list))
             return null;
         try {
+            Collections.sort(list);
             if((e = getData(list.get(0))) == null)
                 return peek();
             return e;
         } catch (KeeperException | InterruptedException ex) {
-            return remove();
+            return peek();
         }
     }
 
